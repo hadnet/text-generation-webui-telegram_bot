@@ -4,7 +4,7 @@ from threading import Thread, Lock, Event
 from pathlib import Path
 import json
 import time
-from re import split, sub
+from re import split, sub, findall
 from os import listdir
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaAudio
 from telegram.ext import CallbackContext, Filters, CommandHandler, MessageHandler, CallbackQueryHandler
@@ -96,7 +96,7 @@ class TelegramBotWrapper:
     sd_api_prompt_of = "Provide a detailed and vivid description of "
     sd_api_prompt_self = "Provide a detailed description of appearance, surroundings and what doing right now"
     # Language list
-    language_dict = {"en": "🇬🇧", "ru": "🇷🇺", "ja": "🇯🇵", "fr": "🇫🇷", "es": "🇪🇸", "de": "🇩🇪", "th": "🇹🇭",
+    language_dict = {"en": "🇬🇧", "ru": "🇷🇺", "ja": "🇯🇵", "fr": "🇫🇷", "es": "🇪🇸", "pt": "🇵🇹", "de": "🇩🇪", "th": "🇹🇭",
                      "tr": "🇹🇷", "it": "🇮🇹", "hi": "🇮🇳", "zh-CN": "🇨🇳", "ar": "🇸🇾"}
     # Set dummy obj for telegram updater
     updater = None
@@ -380,7 +380,11 @@ class TelegramBotWrapper:
 
     def send(self, context: CallbackContext, chat_id: int, text: str):
         user = self.users[chat_id]
-        text = self.prepare_text(text, self.users[chat_id].language, "to_user")
+
+        msg_text = findall(r'(\[[^\]]*\])|([^.!?]+[.!?])', text.strip())
+        cleaned_text = ' '.join(msg_text)
+        
+        text = self.prepare_text(cleaned_text, self.users[chat_id].language, "to_user")
         if user.silero_speaker == "None" or user.silero_model_id == "None":
             message = context.bot.send_message(text=text, chat_id=chat_id, parse_mode="HTML",
                                                reply_markup=self.get_chat_keyboard())
@@ -700,7 +704,7 @@ Language: {user.language}"""
         self.load_preset(preset=self.default_preset)
         user = self.users[chat_id]
         send_text = f"""{user.name2}, 
-        Conversation length{str(len(user.history))} messages.
+        Conversation length: {str(len(user.history))} messages.
         Voice: {user.silero_speaker}
         Language: {user.language}
         New preset: {self.default_preset}"""
@@ -796,7 +800,7 @@ Language: {user.language}"""
         language = list(self.language_dict.keys())[lang_num]
         self.users[chat_id].language = language
         send_text = f"""{user.name2}, 
-        Conversation length{str(len(user.history))} messages.
+        Conversation length: {str(len(user.history))} messages.
         Voice: {user.silero_speaker}
         Language: {user.language} (NEW)"""
         message_id = upd.callback_query.message.message_id
@@ -835,7 +839,7 @@ Language: {user.language}"""
         user.silero_speaker = voice_dict[voice_num]
         user.silero_model_id = Silero.voices[user.language]["model"]
         send_text = f"""{user.name2}, 
-        Conversation length{str(len(user.history))} messages.
+        Conversation length: {str(len(user.history))} messages.
         Voice: {user.silero_speaker} (NEW)
         Language: {user.language}"""
         message_id = upd.callback_query.message.message_id
