@@ -380,9 +380,9 @@ class TelegramBotWrapper:
 
     def send(self, context: CallbackContext, chat_id: int, text: str):
         user = self.users[chat_id]
-
-        msg_text = findall(r'(\[[^\]]*\])|([^.!?]+[.!?])', text.strip())
-        cleaned_text = ' '.join(msg_text)
+        
+        sentences = findall(r'(\[[^\]]*\])|([^.!?\[]+[.!?])', text.strip())
+        cleaned_text = ' '.join([sentence[1] for sentence in sentences if sentence[1]])
         
         text = self.prepare_text(cleaned_text, self.users[chat_id].language, "to_user")
         if user.silero_speaker == "None" or user.silero_model_id == "None":
